@@ -1,0 +1,6 @@
+framework module Pods_XMPPIntegrationTests {
+  umbrella header "Pods-XMPPIntegrationTests-umbrella.h"
+
+  export *
+  module * { export * }
+}
