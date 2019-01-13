@@ -61,9 +61,9 @@ class DBChatManager: NSObject , XMPPRosterDelegate , XMPPMUCDelegate  {
         
         // Setup the XMPP stream
         
-        self.setupConnection()
         self.setupStream()
-        
+        self.setupConnection()
+
         
     }
     
@@ -199,7 +199,8 @@ class DBChatManager: NSObject , XMPPRosterDelegate , XMPPMUCDelegate  {
         // If you don't specify a hostPort, then the default (5222) will be used.
         // host Name replace with your hostName and also set your own port i have pass dummy hostName
         
-        xmppStream?.hostName = "123.213.234.23"
+        xmppStream?.hostName = "132.148.144.24"
+        
         xmppStream?.hostPort = 5222
         
 
@@ -279,7 +280,7 @@ class DBChatManager: NSObject , XMPPRosterDelegate , XMPPMUCDelegate  {
         
         // JID depend on your requirement like in my situation the hostname is opchat.com and on which basis you want to make the JID you cant make the userID or many other unique record like phone number or any other
         
-        let jabberID = "12@opchat.com"
+        let jabberID = "ahmad@opchat.ibexglobal.com"
         
         if jabberID == nil {
             return  false

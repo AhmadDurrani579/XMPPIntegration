@@ -15,7 +15,8 @@ class ViewController: UIViewController {
         
         // Login time First Make the connection with XMPP
         
-//        SharedDBChatManager?.makeConnectionWithChatServer()
+        
+        SharedDBChatManager?.makeConnectionWithChatServer()
         
         
 
