@@ -16,5 +16,5 @@ target 'XMPPIntegration' do
     inherit! :search_paths
     # Pods for testing
   end
- pod 'XMPPFramework/Swift'
+    pod 'XMPPFramework/Swift'
 end

@@ -51,6 +51,7 @@ class DBChatManager: NSObject , XMPPRosterDelegate , XMPPMUCDelegate  {
         return shareInstanceShared
     }
     
+    
     override init() {
         super.init()
     }
@@ -279,7 +280,7 @@ class DBChatManager: NSObject , XMPPRosterDelegate , XMPPMUCDelegate  {
         }
         
         // JID depend on your requirement like in my situation the hostname is opchat.com and on which basis you want to make the JID you cant make the userID or many other unique record like phone number or any other
-        
+//        let userId = "21"
         let jabberID = "ahmad@opchat.ibexglobal.com"
         
         if jabberID == nil {
