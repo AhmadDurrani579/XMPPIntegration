@@ -11,8 +11,14 @@ import XMPPFramework
 
 let SharedDBChatManager = DBChatManager.shareInstance()
 
-class DBChatManager: NSObject , XMPPRosterDelegate , XMPPMUCDelegate  {
+class DBChatManager: NSObject , XMPPRosterDelegate , XMPPMUCDelegate , XMPPRoomLightStorage  {
+    func handleIncomingMessage(_ message: XMPPMessage, room: XMPPRoomLight) {
+        
+    }
     
+    func handleOutgoingMessage(_ message: XMPPMessage, room: XMPPRoomLight) {
+        
+    }
     
 
     private(set)    var  xmppStream                      : XMPPStream?
@@ -33,11 +39,55 @@ class DBChatManager: NSObject , XMPPRosterDelegate , XMPPMUCDelegate  {
     private(set)    var  socketsConnect                  : GCDAsyncSocket?
     private(set)    var  xmppLastSeenActivity            : XMPPLastActivity?
     private(set)    var  xmppAutoPing                    : XMPPAutoPing?
+    private(set)    var  xmppMUCLight                    : XMPPMUCLight?
+    private         let  mucLightServiceName             = "muclight.erlang-solutions.com"
+    private         var         xmppMessageArchivingStorage: XMPPMessageArchivingCoreDataStorage?
+    private         var xmppMessageArchiveManagement: XMPPMessageArchiveManagement?
+    private         var xmppRoomLightCoreDataStorage: XMPPRoomLightCoreDataStorage?
+    private         var xmppMessageDeliveryReceipts: XMPPMessageDeliveryReceipts?
+//    private         var xmppRetransmission                  :  XMPPRetransmission?
+//    private(set)    var xmppOutOfBandMessaging              :  XMPPOutOfBandMessaging?
+    
+
+    var roomsLight = [XMPPRoomLight]() {
+        willSet {
+            for removedRoom in (roomsLight.filter { !newValue.contains($0) }) {
+                xmppMessageArchiveManagement?.removeDelegate(removedRoom)
+//                xmppMessageArchiveManagement.removeDelegate(removedRoom)
+                xmppMessageArchiveManagement?.removeDelegate(removedRoom)
+//                xmppRetransmission?.removeDelegate(removedRoom)
+//                xmppOutOfBandMessaging?.removeDelegate(removedRoom)
+//                xmppRetransmission.removeDelegate(removedRoom)
+//                xmppOutOfBandMessaging.removeDelegate(removedRoom)
+                removedRoom.removeDelegate(self)
+                removedRoom.removeDelegate(self.xmppRoomLightCoreDataStorage!)
+                removedRoom.deactivate()
+            }
+        }
+        didSet {
+            for insertedRoom in (roomsLight.filter { !oldValue.contains($0) }) {
+                insertedRoom.shouldStoreAffiliationChangeMessages = true
+                insertedRoom.activate(xmppStream!)
+                insertedRoom.addDelegate(self, delegateQueue: .main)
+                insertedRoom.addDelegate(self.xmppRoomLightCoreDataStorage!, delegateQueue: insertedRoom.moduleQueue)
+                xmppMessageArchiveManagement?.addDelegate(insertedRoom, delegateQueue: insertedRoom.moduleQueue)
+                
+//                xmppMessageArchiveManagement.addDelegate(insertedRoom, delegateQueue: insertedRoom.moduleQueue)
+//                xmppRetransmission.addDelegate(insertedRoom, delegateQueue: insertedRoom.moduleQueue)
+//                xmppOutOfBandMessaging.addDelegate(insertedRoom, delegateQueue: insertedRoom.moduleQueue)
+                
+                retrieveMessageHistory(fromArchiveAt: insertedRoom.roomJID, lastPageOnly: true)
+            }
+            
+            roomListDelegate?.roomListDidChange(in: self)
+        }
+    }
 
     var customCertEvaluation = false
     var isXmppConnected = false
     var password : String?
-    
+    weak var roomListDelegate: XMPPControllerRoomListDelegate?
+
 
     // Single Method
     static let shareInstanceShared: DBChatManager? = {
@@ -111,7 +161,8 @@ class DBChatManager: NSObject , XMPPRosterDelegate , XMPPMUCDelegate  {
         // There's a bunch more information in the XMPPReconnect header file.
         
         xmppReconnect = XMPPReconnect()
-        
+        self.xmppMUCLight = XMPPMUCLight()
+
         xmppReconnect?.addDelegate(self, delegateQueue: DispatchQueue.main)
         
         // Setup roster
@@ -145,6 +196,8 @@ class DBChatManager: NSObject , XMPPRosterDelegate , XMPPMUCDelegate  {
         xmppMUC = XMPPMUC(dispatchQueue: DispatchQueue.main)
         xmppLastSeenActivity = XMPPLastActivity(dispatchQueue: DispatchQueue.main)
         
+        
+        
         // Setup capabilities
         //
         // The XMPPCapabilities module handles all the complex hashing of the caps protocol (XEP-0115).
@@ -173,7 +226,9 @@ class DBChatManager: NSObject , XMPPRosterDelegate , XMPPMUCDelegate  {
           xmppStreamManagement?.activate(xmppStream!)
           xmppMUC?.activate(xmppStream!)
           xmppLastSeenActivity?.activate(xmppStream!)
-        
+          xmppMUCLight?.activate(xmppStream!)
+          
+
         // Add ourself as a delegate to anything we may be interested in
         
           xmppStream?.addDelegate(self, delegateQueue: DispatchQueue.main)
@@ -186,7 +241,7 @@ class DBChatManager: NSObject , XMPPRosterDelegate , XMPPMUCDelegate  {
           xmppAutoPing?.addDelegate(self, delegateQueue: DispatchQueue.main)
           xmppStreamManagement?.addDelegate(self, delegateQueue: DispatchQueue.main)
           xmppLastSeenActivity?.addDelegate(self, delegateQueue: DispatchQueue.main)
-
+            xmppMUCLight?.addDelegate(self.xmppMUCLight!, delegateQueue: self.xmppMUCLight!.moduleQueue)
         
         // Optional:
         //
@@ -200,8 +255,8 @@ class DBChatManager: NSObject , XMPPRosterDelegate , XMPPMUCDelegate  {
         // If you don't specify a hostPort, then the default (5222) will be used.
         // host Name replace with your hostName and also set your own port i have pass dummy hostName
         
-        xmppStream?.hostName = "localhost"
-        xmppStream?.hostPort = 9090
+        xmppStream?.hostName = "132.148.144.24"
+        xmppStream?.hostPort = 5222
         
 
         
@@ -209,6 +264,10 @@ class DBChatManager: NSObject , XMPPRosterDelegate , XMPPMUCDelegate  {
         
     }
     
+    deinit {
+        self.teardownStream()
+    }
+
     func teardownStream() {
         xmppStream?.removeDelegate(self)
         xmppRoster?.removeDelegate(self)
@@ -230,6 +289,17 @@ class DBChatManager: NSObject , XMPPRosterDelegate , XMPPMUCDelegate  {
         xmppCapabilitiesStorage    = nil;
         xmppPing                   = nil;
         xmppMUC                    = nil;
+        xmppMUCLight  = nil
+        self.roomsLight.forEach { (roomLight) in
+            self.xmppMessageArchiveManagement?.removeDelegate(roomLight)
+//            self.xmppOutOfBandMessaging.removeDelegate(roomLight)
+            roomLight.removeDelegate(self)
+            roomLight.deactivate()
+        }
+        
+        NotificationCenter.default.removeObserver(self, name: .NSManagedObjectContextObjectsDidChange, object: self.managedObjectContext_roster())
+
+        
         
     }
     
@@ -280,7 +350,7 @@ class DBChatManager: NSObject , XMPPRosterDelegate , XMPPMUCDelegate  {
         
         // JID depend on your requirement like in my situation the hostname is opchat.com and on which basis you want to make the JID you cant make the userID or many other unique record like phone number or any other
 //        let userId = "21"
-        let jabberID = "21@localhost"
+        let jabberID = "21@ibexglobal.com"
         
         if jabberID == nil {
             return  false
@@ -321,6 +391,7 @@ class DBChatManager: NSObject , XMPPRosterDelegate , XMPPMUCDelegate  {
     func getPresenceForJid(jidStr : String) {
         let presence = XMPPPresence(name: "available")
         xmppStream?.send(presence)
+        
     }
 
     // MARK: XMPPRoom Delegate
@@ -331,7 +402,54 @@ class DBChatManager: NSObject , XMPPRosterDelegate , XMPPMUCDelegate  {
         xmppRoom?.configureRoom(usingOptions: nil)
         
     }
+    
+    func retrieveMessageHistory(fromArchiveAt archiveJid: XMPPJID? = nil, startingAt startDate: Date? = nil, filteredBy filteringJid: XMPPJID? = nil, lastPageOnly: Bool = false) {
+        let queryFields = [
+            startDate.map { XMPPMessageArchiveManagement.field(withVar: "start", type: nil, andValue: ($0 as NSDate).xmppDateTimeString)},
+            filteringJid.map { _ in XMPPMessageArchiveManagement.field(withVar: "with", type: nil, andValue: archiveJid?.bare ?? "") }
+            ].compactMap { $0 }
+        
+        let resultSet = lastPageOnly ? XMPPResultSet(max: NSNotFound, before: "") : XMPPResultSet(max: NSNotFound, after: "")
+        
+//        xmppMessageArchiveManagement.retrieveMessageArchive(at: archiveJid?.full  , withFields: queryFields, with: resultSet)
+    }
+
+    func addRoom(withName roomName: String, initialOccupantJids: [XMPPJID]?) {
+        let addedRoom = XMPPRoomLight(jid: XMPPJID(string: mucLightServiceName)!, roomname: roomName)
+        addedRoom.addDelegate(self, delegateQueue: DispatchQueue.main)
+        addedRoom.activate(xmppStream!)
+        
+        roomsLight.append(addedRoom)
+        
+        addedRoom.createRoomLight(withMembersJID: initialOccupantJids)
+    }
+
+
 }
+
+//extension DBChatManager : XMPPMUCLightDelegate {
+//
+//    func xmppMUCLight(_ sender: XMPPMUCLight, didDiscoverRooms rooms: [DDXMLElement], forServiceNamed serviceName: String) {
+//        roomsLight = rooms.map { (rawElement) -> XMPPRoomLight in
+//            let rawJid = rawElement.attributeStringValue(forName: "jid")
+//            let rawName = rawElement.attributeStringValue(forName: "name")!
+//            let jid = XMPPJID(string: rawJid!)!
+//
+//            if let existingRoom = (roomsLight.first { $0.roomJID == jid}) {
+//                return existingRoom
+//            } else {
+//
+//                let filteredRoomLightStorage = XMPPRetransmissionRoomLightStorageFilter(baseStorage: xmppRoomLightCoreDataStorage, xmppRetransmission: xmppRetransmission)
+//                return XMPPRoomLight(roomLightStorage: filteredRoomLightStorage, jid: jid, roomname: rawName, dispatchQueue: .main)
+//            }
+//        }
+//    }
+//
+//    func xmppMUCLight(_ sender: XMPPMUCLight, changedAffiliation affiliation: String, roomJID: XMPPJID) {
+//        self.xmppMUCLight!.discoverRooms(forServiceNamed: mucLightServiceName)
+//    }
+//
+//}
 
 extension DBChatManager : XMPPStreamDelegate {
     func xmppStream(_ sender: XMPPStream, socketDidConnect socket: GCDAsyncSocket) {
@@ -358,9 +476,7 @@ extension DBChatManager : XMPPStreamDelegate {
     func xmppStreamDidRegister(_ sender: XMPPStream) {
         
         let topVC = UIApplication.shared.keyWindow?.rootViewController
-        
         let alert = UIAlertController(title: "Registration", message: "Registration with XMPP Successful!", preferredStyle: .alert)
-        
         alert.addAction(UIAlertAction(title: "Yes", style: .default, handler: nil))
         alert.addAction(UIAlertAction(title: "No", style: .cancel, handler: nil))
         
@@ -426,7 +542,7 @@ extension DBChatManager : XMPPStreamDelegate {
         isXmppConnected = true
         let authenticateError : NSError? = nil
         if !(((try? xmppStream!.authenticate(withPassword: password!)) != nil)) {
-            print("Authentication error: \(authenticateError!.localizedDescription)")
+//            print("Authentication error: \(authenticateError!.localizedDescription)")
             //        DDLogError(@"Error authenticating: %@", error);
         }
 
@@ -501,5 +617,29 @@ extension DBChatManager : XMPPStreamDelegate {
     }
     
     
+}
+
+protocol XMPPControllerRoomListDelegate: class {
+    
+    func roomListDidChange(in controller: DBChatManager)
+}
+
+extension DBChatManager : XMPPRoomLightDelegate {
+    
+    func xmppRoomLight(_ sender: XMPPRoomLight, didCreateRoomLight iq: XMPPIQ) {
+//        xmppMUCLight.discoverRooms(forServiceNamed: mucLightServiceName)
+        xmppMUCLight?.discoverRooms(forServiceNamed: mucLightServiceName)
+    }
+    
+    func xmppRoomLight(_ sender: XMPPRoomLight, configurationChanged message: XMPPMessage) {
+        roomListDelegate?.roomListDidChange(in: self)
+    }
+}
+
+extension DBChatManager {
+    func managedObjectContext_roster() -> NSManagedObjectContext {
+//        return self.xmppRosterStorage?.mainThreadManagedObjectContext
+        return (self.xmppRosterStorage?.mainThreadManagedObjectContext)!
+    }
 }
 

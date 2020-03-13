@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 50;
+	objectVersion = 51;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -46,6 +46,7 @@
 		7E2878AA6D95E621356BC95D /* Pods-XMPPIntegration.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-XMPPIntegration.debug.xcconfig"; path = "Pods/Target Support Files/Pods-XMPPIntegration/Pods-XMPPIntegration.debug.xcconfig"; sourceTree = "<group>"; };
 		9120EA446B3E78925F59D2E8 /* Pods_XMPPIntegrationUITests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_XMPPIntegrationUITests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		D7DA1F767B8971669EF4F169 /* Pods-XMPPIntegration.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-XMPPIntegration.release.xcconfig"; path = "Pods/Target Support Files/Pods-XMPPIntegration/Pods-XMPPIntegration.release.xcconfig"; sourceTree = "<group>"; };
+		E23BB979241C2FE3002143FC /* XMPPIntegration-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "XMPPIntegration-Bridging-Header.h"; sourceTree = "<group>"; };
 		E23E571A21E7E9D300564882 /* XMPPIntegration.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = XMPPIntegration.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E23E571D21E7E9D300564882 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		E23E571F21E7E9D300564882 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
@@ -172,6 +173,7 @@
 			isa = PBXGroup;
 			children = (
 				E23E574C21E7EB2900564882 /* DBChatManager.swift */,
+				E23BB979241C2FE3002143FC /* XMPPIntegration-Bridging-Header.h */,
 			);
 			path = MOModelClass;
 			sourceTree = "<group>";
@@ -366,25 +368,16 @@
 			buildActionMask = 2147483647;
 			files = (
 			);
-			inputPaths = (
-				"${SRCROOT}/Pods/Target Support Files/Pods-XMPPIntegration/Pods-XMPPIntegration-frameworks.sh",
-				"${BUILT_PRODUCTS_DIR}/CocoaAsyncSocket/CocoaAsyncSocket.framework",
-				"${BUILT_PRODUCTS_DIR}/CocoaLumberjack/CocoaLumberjack.framework",
-				"${BUILT_PRODUCTS_DIR}/KissXML/KissXML.framework",
-				"${BUILT_PRODUCTS_DIR}/XMPPFramework/XMPPFramework.framework",
-				"${BUILT_PRODUCTS_DIR}/libidn/libidn.framework",
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-XMPPIntegration/Pods-XMPPIntegration-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
 			name = "[CP] Embed Pods Frameworks";
-			outputPaths = (
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/CocoaAsyncSocket.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/CocoaLumberjack.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/KissXML.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/XMPPFramework.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/libidn.framework",
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-XMPPIntegration/Pods-XMPPIntegration-frameworks-${CONFIGURATION}-output-files.xcfilelist",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-XMPPIntegration/Pods-XMPPIntegration-frameworks.sh\"\n";
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-XMPPIntegration/Pods-XMPPIntegration-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
@@ -582,6 +575,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.techEase.XMPPIntegration;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OBJC_BRIDGING_HEADER = "/Users/ahmed/Documents/XMPPIntegration/XMPPIntegration/MOModelClass/XMPPIntegration-Bridging-Header.h";
 				SWIFT_VERSION = 4.2;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -602,6 +596,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.techEase.XMPPIntegration;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OBJC_BRIDGING_HEADER = "/Users/ahmed/Documents/XMPPIntegration/XMPPIntegration/MOModelClass/XMPPIntegration-Bridging-Header.h";
 				SWIFT_VERSION = 4.2;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};

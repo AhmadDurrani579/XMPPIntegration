@@ -17,4 +17,7 @@ target 'XMPPIntegration' do
     # Pods for testing
   end
     pod 'XMPPFramework/Swift'
+    
+#    pod 'XMPPFramework', :git => "https://github.com/esl/XMPPFramework.git", :branch => 'pending-fixes'
+
 end
